@@ -1,0 +1,84 @@
+---
+title: "Stan_Mechbayes"
+author: "Graham Casey Gibson"
+date: "6/3/2020"
+output: pdf_document
+---
+
+
+```{r}
+library(outbreaks)
+library(tidyverse)
+```
+
+```{r}
+
+head(influenza_england_1978_school)
+
+```
+
+```{r}
+library(rstan)
+library(gridExtra)
+rstan_options (auto_write = TRUE)
+options (mc.cores = parallel::detectCores ())
+set.seed(3) # for reproductibility
+```
+
+
+```{r}
+cases <- read.csv("/Users/gcgibson/turth-deaths.csv")  # Number of students in bed
+cases <- tail(cases[cases$location_name =="US",]$value,80)
+# time series of cases
+#cases <- influenza_england_1978_school$in_bed  # Number of students in bed
+
+# total count
+N <- 300e6;
+
+# times
+n_days <- length(cases) 
+t <- c(1,2)
+t0 = 0 
+#t <- t[-1]
+
+#initial conditions
+i0 <- 1
+s0 <- N - i0
+r0 <- 0
+d0 <- 0
+y0 = c(S = s0, I = i0, R = r0,D = d0)
+
+# data for Stan
+data_sir <- list(n_days = n_days, y0 = y0, t0 = t0, ts = t, N = N, cases = cases)
+plot(cases)
+# number of MCMC steps
+```
+
+
+```{r}
+library(rstan)
+model <- stan_model("stan-mech-bayes.stan")
+fit_sir_negbin <- sampling(model,
+                data = data_sir,
+                chains = 1,
+                iter=1000,
+                warmup=500)
+                  
+
+```
+
+
+
+```{r}
+
+smr_pred <- cbind(as.data.frame(summary(
+  fit_sir_negbin, pars = "pred_cases", probs = c(0.05, 0.5, 0.95))$summary), t, cases)
+colnames(smr_pred) <- make.names(colnames(smr_pred)) # to remove % in the col names
+
+ggplot(smr_pred, mapping = aes(x = 1:n_days)) +
+#  geom_ribbon(aes(ymin = X5., ymax = X95.), fill = "orange", alpha = 0.6) +
+  geom_line(mapping = aes(x = 1:n_days, y = X50.)) + 
+  geom_point(mapping = aes(y = cases)) +
+  labs(x = "Day", y = "US Deaths")
+
+```
