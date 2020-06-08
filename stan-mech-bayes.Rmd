@@ -42,14 +42,14 @@ t0 = 0
 #t <- t[-1]
 
 #initial conditions
-i0 <- 1
+i0 <- 100*cases[1]
 s0 <- N - i0
 r0 <- 0
 d0 <- 0
-y0 = c(S = s0, I = i0, R = r0,D = d0)
+y0 = c(S = s0, E= 4*i0, I = i0, R = r0,D1 = 4*cases[1],D2=cases[1])
 
 # data for Stan
-data_sir <- list(n_days = n_days, y0 = y0, t0 = t0, ts = t, N = N, cases = cases)
+data_sir <- list(n_days = n_days, y0 = y0, t0 = t0, ts = t, N = N, cases = cases,L=0.)
 plot(cases)
 # number of MCMC steps
 ```
@@ -76,9 +76,24 @@ smr_pred <- cbind(as.data.frame(summary(
 colnames(smr_pred) <- make.names(colnames(smr_pred)) # to remove % in the col names
 
 ggplot(smr_pred, mapping = aes(x = 1:n_days)) +
-#  geom_ribbon(aes(ymin = X5., ymax = X95.), fill = "orange", alpha = 0.6) +
+ geom_ribbon(aes(ymin = X5., ymax = X95.), fill = "orange", alpha = 0.6) +
   geom_line(mapping = aes(x = 1:n_days, y = X50.)) + 
   geom_point(mapping = aes(y = cases)) +
+  labs(x = "Day", y = "US Deaths")
+
+```
+
+
+
+```{r}
+smr_pred <- cbind(as.data.frame(summary(
+  fit_sir_negbin, pars = "pred_cases", probs = c(0.10, 0.5, 0.90))$summary), t, cases)
+colnames(smr_pred) <- make.names(colnames(smr_pred)) # to remove % in the col names
+
+ggplot(smr_pred, mapping = aes(x = 1:n_days)) +
+ geom_ribbon(aes(ymin = cumsum(X10.), ymax = cumsum(X90.)), fill = "orange", alpha = 0.6) +
+  geom_line(mapping = aes(x = 1:n_days, y = cumsum(X50.))) + 
+  geom_point(mapping = aes(y = cumsum(cases))) +
   labs(x = "Day", y = "US Deaths")
 
 ```
