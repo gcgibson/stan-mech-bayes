@@ -1,4 +1,4 @@
 
-# jags-seir
+# Stan Mech Bayes
 
-Just starting, but hoping to make a nice bayesian compartmental framework for jags
+My stan port of a Bayesian SEIRD model I have been collaborating on with Dan Sheldon. 
